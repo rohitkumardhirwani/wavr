@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WAVR — Music Player</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+<!-- ═══════════════════════════════ SIDEBAR ═══════════════════════════════ -->
+<div id="sidebar">
+  <div id="logo">
+    <span class="logo-icon">▶</span>
+    <span class="logo-text">WAVR</span>
+  </div>
+
+  <nav id="nav-menu">
+    <div class="nav-section-label">LIBRARY</div>
+    <button class="nav-btn active" data-view="home" onclick="switchView('home')">
+      <span class="nav-icon">⊞</span> Home
+    </button>
+    <button class="nav-btn" data-view="search" onclick="switchView('search')">
+      <span class="nav-icon">◎</span> Search
+    </button>
+    <button class="nav-btn" data-view="liked" onclick="switchView('liked')">
+      <span class="nav-icon">♥</span> Liked Songs
+    </button>
+
+    <div class="nav-section-label" style="margin-top:20px">PLAYLISTS</div>
+    <div id="playlist-nav-list"></div>
+
+    <button id="new-playlist-btn" onclick="createNewPlaylist()">
+      <span>＋</span> New Playlist
+    </button>
+  </nav>
+
+  <div id="sidebar-bottom">
+    <button id="upload-btn-sidebar" onclick="document.getElementById('file-input').click()">
+      ↑ Upload Songs
+    </button>
+    <input type="file" id="file-input" multiple accept="audio/*" style="display:none"/>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ MAIN CONTENT ═══════════════════════════════ -->
+<div id="main">
+
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div id="topbar-left">
+      <button class="nav-arrow" onclick="history.back()">←</button>
+      <button class="nav-arrow" onclick="history.forward()">→</button>
+    </div>
+    <div id="search-bar-wrap" style="display:none">
+      <input type="text" id="search-input" placeholder="Search songs, playlists…" oninput="doSearch(this.value)"/>
+    </div>
+    <div id="topbar-right">
+      <button class="icon-btn" title="Sleep Timer" onclick="openSleepTimer()">⏱</button>
+      <button class="icon-btn" title="Share / QR" onclick="openShareModal()">⬡</button>
+      <div id="user-avatar">U</div>
+    </div>
+  </div>
+
+  <!-- ─── HOME VIEW ─── -->
+  <div id="view-home" class="view active">
+    <div class="view-hero">
+      <h1 class="hero-title">Good <span id="greeting-time">Evening</span></h1>
+      <p class="hero-sub">Your music, your world.</p>
+    </div>
+
+    <div class="section-row">
+      <h2 class="section-title">Quick Picks</h2>
+      <div id="quick-picks-grid" class="quick-grid"></div>
+    </div>
+
+    <div class="section-row">
+      <h2 class="section-title">All Playlists</h2>
+      <div id="playlists-grid" class="card-grid"></div>
+    </div>
+
+    <div class="section-row">
+      <h2 class="section-title">Recently Added</h2>
+      <div id="recent-songs-list" class="song-list"></div>
+    </div>
+  </div>
+
+  <!-- ─── SEARCH VIEW ─── -->
+  <div id="view-search" class="view">
+    <h2 class="section-title" style="margin-bottom:20px">Search Results</h2>
+    <div id="search-results" class="song-list"></div>
+  </div>
+
+  <!-- ─── LIKED VIEW ─── -->
+  <div id="view-liked" class="view">
+    <div class="playlist-header liked-header">
+      <div class="playlist-cover-big liked-cover">♥</div>
+      <div class="playlist-meta">
+        <p class="pl-type">PLAYLIST</p>
+        <h1 class="pl-title">Liked Songs</h1>
+        <p class="pl-count" id="liked-count">0 songs</p>
+      </div>
+    </div>
+    <div class="playlist-controls">
+      <button class="play-big-btn" onclick="playPlaylist('liked')">▶ Play</button>
+      <button class="shuffle-btn" onclick="shufflePlaylist('liked')">⇄ Shuffle</button>
+    </div>
+    <div id="liked-songs-list" class="song-list"></div>
+  </div>
+
+  <!-- ─── PLAYLIST VIEW ─── -->
+  <div id="view-playlist" class="view">
+    <div class="playlist-header">
+      <div class="playlist-cover-big" id="pl-view-cover">♪</div>
+      <div class="playlist-meta">
+        <p class="pl-type">PLAYLIST</p>
+        <h1 class="pl-title" id="pl-view-name" contenteditable="true" onblur="renameCurrentPlaylist(this)">Playlist</h1>
+        <p class="pl-count" id="pl-view-count">0 songs</p>
+      </div>
+    </div>
+    <div class="playlist-controls">
+      <button class="play-big-btn" onclick="playCurrentPlaylist()">▶ Play</button>
+      <button class="shuffle-btn" onclick="shuffleCurrentPlaylist()">⇄ Shuffle</button>
+      <button class="share-pl-btn" onclick="openShareModal()">↗ Share</button>
+      <button class="delete-pl-btn" onclick="deleteCurrentPlaylist()">✕ Delete</button>
+    </div>
+    <div id="pl-view-songs" class="song-list"></div>
+  </div>
+
+</div><!-- end #main -->
+
+<!-- ═══════════════════════════════ PLAYER BAR ═══════════════════════════════ -->
+<div id="player-bar">
+  <!-- Song Info -->
+  <div id="player-left">
+    <div id="player-art" class="player-art">♪</div>
+    <div id="player-info">
+      <div id="player-title">No song playing</div>
+      <div id="player-artist">—</div>
+    </div>
+    <button id="like-btn" class="player-icon-btn" onclick="toggleLikeCurrent()" title="Like">♡</button>
+  </div>
+
+  <!-- Controls -->
+  <div id="player-center">
+    <div id="player-controls">
+      <button class="ctrl-btn" id="shuffle-btn-ctrl" onclick="toggleShuffle()" title="Shuffle">⇄</button>
+      <button class="ctrl-btn" onclick="prevSong()" title="Previous">⏮</button>
+      <button class="ctrl-btn play-pause" id="play-pause-btn" onclick="togglePlayPause()">▶</button>
+      <button class="ctrl-btn" onclick="nextSong()" title="Next">⏭</button>
+      <button class="ctrl-btn" id="loop-btn-ctrl" onclick="toggleLoop()" title="Loop">↺</button>
+    </div>
+    <div id="progress-bar-wrap">
+      <span id="time-current">0:00</span>
+      <div id="progress-bar" onclick="seekTo(event)">
+        <div id="progress-fill"></div>
+        <div id="progress-thumb"></div>
+      </div>
+      <span id="time-total">0:00</span>
+    </div>
+  </div>
+
+  <!-- Volume + extras -->
+  <div id="player-right">
+    <button class="player-icon-btn" id="queue-btn" onclick="toggleQueue()" title="Queue">≡</button>
+    <span class="player-vol-icon">🔊</span>
+    <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1" oninput="setVolume(this.value)"/>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ QUEUE PANEL ═══════════════════════════════ -->
+<div id="queue-panel">
+  <div class="queue-header">
+    <h3>Up Next</h3>
+    <button onclick="toggleQueue()">✕</button>
+  </div>
+  <div id="queue-list"></div>
+</div>
+
+<!-- ═══════════════════════════════ SLEEP TIMER MODAL ═══════════════════════════════ -->
+<div id="sleep-modal" class="modal-overlay" onclick="closeSleepTimer(event)">
+  <div class="modal-box">
+    <h2 class="modal-title">Sleep Timer</h2>
+    <p class="modal-sub">Music will stop after:</p>
+    <div class="timer-options">
+      <button onclick="setSleepTimer(5)">5 min</button>
+      <button onclick="setSleepTimer(10)">10 min</button>
+      <button onclick="setSleepTimer(15)">15 min</button>
+      <button onclick="setSleepTimer(30)">30 min</button>
+      <button onclick="setSleepTimer(45)">45 min</button>
+      <button onclick="setSleepTimer(60)">60 min</button>
+    </div>
+    <div class="custom-timer-row">
+      <input type="number" id="custom-timer-input" placeholder="Custom (min)" min="1" max="300"/>
+      <button onclick="setSleepTimerCustom()">Set</button>
+    </div>
+    <div id="sleep-timer-status"></div>
+    <button class="modal-cancel-btn" onclick="cancelSleepTimer()">Cancel Timer</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ SHARE / QR MODAL ═══════════════════════════════ -->
+<div id="share-modal" class="modal-overlay" onclick="closeShareModal(event)">
+  <div class="modal-box">
+    <h2 class="modal-title">Share Playlist</h2>
+    <p class="modal-sub">Open on another device via link or QR code</p>
+    <div id="qr-code-wrap"></div>
+    <div class="share-link-row">
+      <input type="text" id="share-link-input" readonly/>
+      <button onclick="copyShareLink()">Copy</button>
+    </div>
+    <p class="share-note">⚠ Songs are stored locally — the other device needs to upload the same files. This link shares the playlist structure only.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ TOAST ═══════════════════════════════ -->
+<div id="toast"></div>
+
+<!-- ═══════════════════════════════ DROP OVERLAY ═══════════════════════════════ -->
+<div id="drop-overlay">
+  <div class="drop-inner">
+    <div class="drop-icon">↑</div>
+    <div class="drop-text">Drop audio files to upload</div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
